@@ -1,0 +1,37 @@
+---
+- name: website installation
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: yes
+  tasks:
+  - name: create directory
+    file: 
+       path: /root/web/ansibledeployment
+       state: directory
+  - name: download website package
+    get_url:
+       url: http://registryipaddress/path/to/installationfile.zip
+       dest: /root/web/ansibledeployment
+  - name: install unzip package
+    apt:
+     name: unzip
+     state: present
+     update_cache: yes
+  - name: unzip downloaded website bundle
+    unarchive:
+      src: /root/web/ansibledeployment/installationfile.zip
+      dest: /root/web/ansibledeployment/
+  - name: edit script folder
+    lineinfile:
+        path: /root/web/ansibledeployment/installationfile/scripts/<somescriptfilename>.sh
+        line: docker login -u <username> -p <password> <registryURL>
+        insertafter: '. setenv.sh'
+        state: present
+  - name: replace /var/log/ to $DIR/../
+    replace:
+       path: /root/web/ansibledeployment/installationfile/scripts/<somescriptfilename>.sh
+       regexp: "/var/log/"
+       replace: "$DIR/../"
+  - name: execute the script
+    script: /root/web/ansibledeployment/installationfile/scripts/<somescriptfilename>.sh
