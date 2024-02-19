@@ -1,0 +1,52 @@
+---
+- name: web app deployment
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: yes
+  tasks:
+  - name: add gpg key for docker
+    apt_key:
+       url: https://download.docker.com/linux/ubuntu/gpg
+  - name: add repo for docker
+    apt_repository:
+       repo: "deb [arch={{ ansible_architecture }}] https://download.docker.com/linux/{{ ansible_distribution | lower }} {{ ansible_distribution_release }} stable"
+       state: present
+       filename: docker
+  - name: installation of the docker and its component
+    apt:
+      name: "{{ item }}"
+      state: present
+      update_cache: yes
+    with_items:
+      - apt-transport-https
+      - curl
+      - ca-certificates
+      - gnupg-agent
+      - software-properties-common
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+  - name: To install docker-compose
+    shell: curl -L https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m) > /usr/local/bin/docker-compose
+  - name: give permission to compose
+    shell: chmod 755 /usr/local/bin/docker-compose
+  - name: add nodejs repo
+    shell: curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -
+  - name: installation of the nodejs and npm package
+    apt:
+      name: "{{ item }}"
+      state: present
+      update_cache: yes
+    with_items:
+      - nodejs
+  - name: install angularjs using npm
+    shell: sudo npm install -g @angular/cli
+
+  - name: restart docker services
+    service:
+       name: "{{ item }}"
+       state: started
+       enabled: yes
+    with_items:
+        - docker 
